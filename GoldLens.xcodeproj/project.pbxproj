@@ -6,14 +6,75 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		69E7F162300659D300B7AC11 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 69E7F161300659D200B7AC11 /* WidgetKit.framework */; };
+		69E7F164300659D300B7AC11 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 69E7F163300659D300B7AC11 /* SwiftUI.framework */; };
+		69E7F175300659D500B7AC11 /* GoldLensWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 69E7F15F300659D200B7AC11 /* GoldLensWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		69E7F173300659D500B7AC11 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 69B86F9C3003CA590045DD1D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 69E7F15E300659D200B7AC11;
+			remoteInfo = GoldLensWidgetsExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		69E7F176300659D500B7AC11 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				69E7F175300659D500B7AC11 /* GoldLensWidgetsExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		69B86FA43003CA590045DD1D /* GoldLens.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GoldLens.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		69E7F15F300659D200B7AC11 /* GoldLensWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GoldLensWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		69E7F161300659D200B7AC11 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		69E7F163300659D300B7AC11 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		69E7F15230064F9600B7AC11 /* Exceptions for "GoldLens" folder in "GoldLens" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 69B86FA33003CA590045DD1D /* GoldLens */;
+		};
+		69E7F17A300659D500B7AC11 /* Exceptions for "GoldLensWidgets" folder in "GoldLensWidgetsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 69E7F15E300659D200B7AC11 /* GoldLensWidgetsExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		69B86FA63003CA590045DD1D /* GoldLens */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				69E7F15230064F9600B7AC11 /* Exceptions for "GoldLens" folder in "GoldLens" target */,
+			);
 			path = GoldLens;
+			sourceTree = "<group>";
+		};
+		69E7F165300659D300B7AC11 /* GoldLensWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				69E7F17A300659D500B7AC11 /* Exceptions for "GoldLensWidgets" folder in "GoldLensWidgetsExtension" target */,
+			);
+			path = GoldLensWidgets;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -26,6 +87,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		69E7F15C300659D200B7AC11 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				69E7F164300659D300B7AC11 /* SwiftUI.framework in Frameworks */,
+				69E7F162300659D300B7AC11 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -33,6 +103,8 @@
 			isa = PBXGroup;
 			children = (
 				69B86FA63003CA590045DD1D /* GoldLens */,
+				69E7F165300659D300B7AC11 /* GoldLensWidgets */,
+				69E7F160300659D200B7AC11 /* Frameworks */,
 				69B86FA53003CA590045DD1D /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,8 +113,18 @@
 			isa = PBXGroup;
 			children = (
 				69B86FA43003CA590045DD1D /* GoldLens.app */,
+				69E7F15F300659D200B7AC11 /* GoldLensWidgetsExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		69E7F160300659D200B7AC11 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				69E7F161300659D200B7AC11 /* WidgetKit.framework */,
+				69E7F163300659D300B7AC11 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -55,10 +137,12 @@
 				69B86FA03003CA590045DD1D /* Sources */,
 				69B86FA13003CA590045DD1D /* Frameworks */,
 				69B86FA23003CA590045DD1D /* Resources */,
+				69E7F176300659D500B7AC11 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				69E7F174300659D500B7AC11 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				69B86FA63003CA590045DD1D /* GoldLens */,
@@ -66,9 +150,31 @@
 			name = GoldLens;
 			packageProductDependencies = (
 			);
-			productName = "money app";
+			productName = GoldLens;
 			productReference = 69B86FA43003CA590045DD1D /* GoldLens.app */;
 			productType = "com.apple.product-type.application";
+		};
+		69E7F15E300659D200B7AC11 /* GoldLensWidgetsExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 69E7F179300659D500B7AC11 /* Build configuration list for PBXNativeTarget "GoldLensWidgetsExtension" */;
+			buildPhases = (
+				69E7F15B300659D200B7AC11 /* Sources */,
+				69E7F15C300659D200B7AC11 /* Frameworks */,
+				69E7F15D300659D200B7AC11 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				69E7F165300659D300B7AC11 /* GoldLensWidgets */,
+			);
+			name = GoldLensWidgetsExtension;
+			packageProductDependencies = (
+			);
+			productName = GoldLensWidgetsExtension;
+			productReference = 69E7F15F300659D200B7AC11 /* GoldLensWidgetsExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -81,6 +187,9 @@
 				LastUpgradeCheck = 2660;
 				TargetAttributes = {
 					69B86FA33003CA590045DD1D = {
+						CreatedOnToolsVersion = 26.6;
+					};
+					69E7F15E300659D200B7AC11 = {
 						CreatedOnToolsVersion = 26.6;
 					};
 				};
@@ -100,12 +209,20 @@
 			projectRoot = "";
 			targets = (
 				69B86FA33003CA590045DD1D /* GoldLens */,
+				69E7F15E300659D200B7AC11 /* GoldLensWidgetsExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		69B86FA23003CA590045DD1D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		69E7F15D300659D200B7AC11 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -122,7 +239,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		69E7F15B300659D200B7AC11 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		69E7F174300659D500B7AC11 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 69E7F15E300659D200B7AC11 /* GoldLensWidgetsExtension */;
+			targetProxy = 69E7F173300659D500B7AC11 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		69B86FAD3003CA5D0045DD1D /* Debug */ = {
@@ -255,21 +387,23 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = V43P5A89S8;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = GoldLens/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = GoldLens;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
+				INFOPLIST_KEY_OanorAPIKey = "";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.5;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.arshia.money-app";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.arshia.goldlens;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -290,25 +424,87 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = V43P5A89S8;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = GoldLens/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = GoldLens;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
+				INFOPLIST_KEY_OanorAPIKey = "";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.5;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.arshia.money-app";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.arshia.goldlens;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		69E7F177300659D500B7AC11 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = V43P5A89S8;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = GoldLensWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = GoldLensWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.arshia.goldlens.GoldLensWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		69E7F178300659D500B7AC11 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = V43P5A89S8;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = GoldLensWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = GoldLensWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.arshia.goldlens.GoldLensWidgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
@@ -333,6 +529,15 @@
 			buildConfigurations = (
 				69B86FB03003CA5D0045DD1D /* Debug */,
 				69B86FB13003CA5D0045DD1D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		69E7F179300659D500B7AC11 /* Build configuration list for PBXNativeTarget "GoldLensWidgetsExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				69E7F177300659D500B7AC11 /* Debug */,
+				69E7F178300659D500B7AC11 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
