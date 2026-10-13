@@ -7,9 +7,10 @@ import UIKit
 import UserNotifications
 
 struct ContentView: View {
-    @AppStorage("notificationsEnabled") private var notificationsEnabled = true
+    @AppStorage("notificationsEnabled") private var notificationsEnabled = false
     @AppStorage("alertThreshold") private var alertThreshold = 1.5
     @AppStorage("appLanguage") private var appLanguage = AppLanguage.persian.rawValue
+    @StateObject private var marketStore = MarketStore()
     private let isRunningInPreview = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
 
     var body: some View {
@@ -17,11 +18,12 @@ struct ContentView: View {
             MarketDashboardView(
                 notificationsEnabled: $notificationsEnabled,
                 alertThreshold: $alertThreshold,
-                isRunningInPreview: isRunningInPreview
+                isRunningInPreview: isRunningInPreview,
+                marketStore: marketStore
             )
             .tabItem { Label(appText("بازار", "Market"), systemImage: "chart.xyaxis.line") }
 
-            PortfolioView()
+            PortfolioView(marketStore: marketStore)
                 .tabItem { Label(appText("دارایی من", "Portfolio"), systemImage: "wallet.pass.fill") }
 
             SettingsView(
@@ -45,7 +47,7 @@ private struct MarketDashboardView: View {
     @State private var selectedAsset: MarketAsset = .gold
     @State private var selectedRange: ChartRange = .week
     @State private var showAlertSheet = false
-    @StateObject private var marketStore = MarketStore()
+    @ObservedObject var marketStore: MarketStore
 
     private var asset: MarketSnapshot { marketStore.snapshot(for: selectedAsset) }
 
@@ -90,9 +92,6 @@ private struct MarketDashboardView: View {
         }
         .task {
             guard !isRunningInPreview else { return }
-            if notificationsEnabled {
-                await NotificationManager.shared.requestAuthorization()
-            }
             await marketStore.refresh(
                 notificationsEnabled: notificationsEnabled,
                 threshold: alertThreshold
@@ -117,7 +116,7 @@ private struct MarketDashboardView: View {
         HStack(spacing: 8) {
             Image(systemName: marketStore.isRefreshing ? "arrow.triangle.2.circlepath" : marketStore.connectionMessage == nil ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
                 .foregroundStyle(marketStore.isRefreshing ? .blue : marketStore.connectionMessage == nil ? .green : .orange)
-            Text(marketStore.isRefreshing ? "در حال به‌روزرسانی" : marketStore.connectionMessage == nil ? "بازار باز است" : "اطلاعات بازار در دسترس نیست")
+            Text(marketStore.isRefreshing ? "در حال به‌روزرسانی" : marketStore.connectionMessage == nil ? "نرخ زنده دریافت شد" : "اطلاعات بازار در دسترس نیست")
             Spacer()
             Text(marketStore.sourceTitle)
                 .foregroundStyle(.secondary)
@@ -299,12 +298,13 @@ private struct MarketDashboardView: View {
 }
 
 private struct PortfolioView: View {
+    @ObservedObject var marketStore: MarketStore
     @AppStorage("portfolioGoldGrams") private var goldGrams = 12.5
     @AppStorage("portfolioDollars") private var dollars = 300.0
     @FocusState private var focusedField: PortfolioField?
 
-    private var goldValue: Double { goldGrams * MarketSnapshot.gold.numericPrice }
-    private var dollarValue: Double { dollars * MarketSnapshot.dollar.numericPrice }
+    private var goldValue: Double { max(0, goldGrams) * marketStore.snapshot(for: .gold).numericPrice }
+    private var dollarValue: Double { max(0, dollars) * marketStore.snapshot(for: .dollar).numericPrice }
     private var totalValue: Double { goldValue + dollarValue }
 
     var body: some View {
@@ -333,6 +333,8 @@ private struct PortfolioView: View {
             }
             .scrollDismissesKeyboard(.interactively)
             .onTapGesture { dismissKeyboard() }
+            .onChange(of: goldGrams) { _, value in if value < 0 { goldGrams = 0 } }
+            .onChange(of: dollars) { _, value in if value < 0 { dollars = 0 } }
             .navigationTitle(appText("دارایی من", "Portfolio"))
             .toolbar {
                 ToolbarItemGroup(placement: .keyboard) {
@@ -353,7 +355,6 @@ private func dismissKeyboard() {
 private struct SettingsView: View {
     @Binding var notificationsEnabled: Bool
     @Binding var alertThreshold: Double
-    @AppStorage("dailySummary") private var dailySummary = true
     @AppStorage("appLanguage") private var appLanguage = AppLanguage.persian.rawValue
 
     var body: some View {
@@ -368,9 +369,11 @@ private struct SettingsView: View {
                 }
                 Section("اعلان‌ها") {
                     Toggle("هشدار نوسان", isOn: $notificationsEnabled)
-                    Toggle("خلاصه روزانه بازار", isOn: $dailySummary)
                     Button("آزمایش اعلان") {
-                        Task { await NotificationManager.shared.sendTestNotification() }
+                        Task {
+                            await NotificationManager.shared.requestAuthorization()
+                            await NotificationManager.shared.sendTestNotification()
+                        }
                     }
                     if notificationsEnabled {
                         VStack(alignment: .leading, spacing: 8) {
@@ -380,9 +383,9 @@ private struct SettingsView: View {
                     }
                 }
                 Section("منبع قیمت") {
-                    LabeledContent("مرجع نرخ", value: "Oanor بازار آزاد")
+                    LabeledContent("مرجع نرخ", value: "بازار آزاد")
                     LabeledContent("بازه پیشنهادی", value: "هر ۵ دقیقه")
-                    Text("داده‌ها از Oanor دریافت می‌شوند. در صورت قطع اینترنت، آخرین قیمت نمایش‌داده‌شده حفظ می‌شود.")
+                    Text("داده‌ها از منبع عمومی بازار دریافت می‌شوند. در صورت قطع اینترنت، آخرین قیمت نمایش‌داده‌شده حفظ می‌شود.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
                 Section("درباره تحلیل") {
@@ -561,14 +564,15 @@ private struct PricePoint: Identifiable { let label: String; let value: Int; var
 private final class MarketStore: ObservableObject {
     @Published private(set) var lastUpdated = Date()
     @Published private(set) var isRefreshing = false
-    @Published private(set) var sourceTitle = "Oanor"
+    @Published private(set) var sourceTitle = "منبع عمومی"
     @Published private(set) var connectionMessage: String?
     @Published private(set) var events = MarketEvent.sample
 
-    private var snapshots: [MarketAsset: MarketSnapshot] = [
+    @Published private var snapshots: [MarketAsset: MarketSnapshot] = [
         .gold: .gold,
         .dollar: .dollar
     ]
+    private var lastAlertDate: [MarketAsset: Date] = [:]
 
     func snapshot(for asset: MarketAsset) -> MarketSnapshot {
         snapshots[asset] ?? asset.snapshot
@@ -579,9 +583,9 @@ private final class MarketStore: ObservableObject {
         isRefreshing = true
         defer { isRefreshing = false }
 
-        let result = await OanorClient.fetchQuotes()
+        let result = await MarketDataClient.fetchQuotes()
         guard case let .success(remoteQuotes) = result else {
-            sourceTitle = "Oanor در دسترس نیست"
+            sourceTitle = "منبع قیمت در دسترس نیست"
             if case let .failure(error) = result {
                 connectionMessage = "\(error.localizedDescription) آخرین نرخ موجود نمایش داده می‌شود."
             } else {
@@ -590,7 +594,7 @@ private final class MarketStore: ObservableObject {
             return
         }
 
-        sourceTitle = "Oanor زنده"
+        sourceTitle = "نرخ زنده"
         connectionMessage = nil
 
         for asset in MarketAsset.allCases {
@@ -603,8 +607,11 @@ private final class MarketStore: ObservableObject {
                 await MarketLiveActivityManager.shared.update(with: updated)
             }
 
-            if notificationsEnabled, abs(updated.change) >= threshold {
+            if notificationsEnabled,
+               abs(updated.change) >= threshold,
+               canSendAlert(for: asset) {
                 await NotificationManager.shared.sendPriceAlert(for: updated)
+                lastAlertDate[asset] = .now
             }
 
             let direction = updated.change >= 0 ? "افزایش" : "کاهش"
@@ -622,72 +629,75 @@ private final class MarketStore: ObservableObject {
         events = Array(events.prefix(8))
         lastUpdated = Date()
     }
+
+    private func canSendAlert(for asset: MarketAsset) -> Bool {
+        guard let date = lastAlertDate[asset] else { return true }
+        return Date().timeIntervalSince(date) >= 20 * 60
+    }
 }
 
-private enum OanorClient {
-    private static let baseURL = URL(string: "https://api.oanor.com/irr-api/v1")!
-    private static let apiKey = (Bundle.main.object(forInfoDictionaryKey: "OanorAPIKey") as? String ?? "")
-        .trimmingCharacters(in: .whitespacesAndNewlines)
+private enum MarketDataClient {
+    private static let liveURL = URL(string: "https://call.tgju.org/ajax.json")!
+    private static let dollarFallbackURL = URL(string: "https://api.tgju.org/v1/market/indicator/summary-table-data/price_dollar_rl")!
+    private static let goldFallbackURL = URL(string: "https://api.tgju.org/v1/market/indicator/summary-table-data/price_geram18")!
 
     static func fetchQuotes() async -> Result<[MarketAsset: Double], Error> {
-        guard !apiKey.isEmpty else { return .failure(MarketDataError.missingAPIKey) }
         do {
-            async let currencies = request(path: "currencies")
-            async let gold = request(path: "gold")
-            let (currenciesData, goldData) = try await (currencies, gold)
-            let dollar = try parsePrice(from: currenciesData, keys: ["usd_rls", "usd_irr", "usd", "dollar"])
-            let gold18 = try parsePrice(from: goldData, keys: ["gold_18k", "gold18", "geram18", "18k"])
-            return .success([.dollar: rialToToman(dollar), .gold: rialToToman(gold18)])
+            let liveData = try await request(liveURL)
+            let liveQuotes = try parseLiveQuotes(from: liveData)
+            if liveQuotes.count == MarketAsset.allCases.count { return .success(liveQuotes) }
+
+            async let dollarData = request(dollarFallbackURL)
+            async let goldData = request(goldFallbackURL)
+            let (dollarResponse, goldResponse) = try await (dollarData, goldData)
+            return .success([
+                .dollar: normalizeRial(try parseFirstPrice(from: dollarResponse)),
+                .gold: normalizeRial(try parseFirstPrice(from: goldResponse))
+            ])
         } catch {
             return .failure(error)
         }
     }
 
-    private static func request(path: String) async throws -> Data {
-        var request = URLRequest(url: baseURL.appending(path: path))
+    private static func request(_ url: URL) async throws -> Data {
+        var request = URLRequest(url: url)
         request.timeoutInterval = 15
         request.setValue("GoldLens/1.0", forHTTPHeaderField: "User-Agent")
-        request.setValue(apiKey, forHTTPHeaderField: "x-oanor-key")
         let (data, response) = try await URLSession.shared.data(for: request)
-        guard let response = response as? HTTPURLResponse else {
+        guard let response = response as? HTTPURLResponse, 200..<300 ~= response.statusCode else {
             throw MarketDataError.unavailable
-        }
-        guard 200..<300 ~= response.statusCode else {
-            switch response.statusCode {
-            case 401, 403: throw MarketDataError.invalidAPIKey
-            case 429: throw MarketDataError.rateLimited
-            default: throw MarketDataError.unavailable
-            }
         }
         return data
     }
 
-    private static func parsePrice(from data: Data, keys: [String]) throws -> Double {
+    private static func parseLiveQuotes(from data: Data) throws -> [MarketAsset: Double] {
         let json = try JSONSerialization.jsonObject(with: data)
-        guard let price = numberForInstrument(in: json, keys: keys) else {
-            throw URLError(.cannotParseResponse)
-        }
-        return price
+        guard let root = json as? [String: Any] else { throw URLError(.cannotParseResponse) }
+        let current = root["current"] as? [String: Any] ?? root
+        let dollar = number(from: current["price_dollar_rl"])
+        let gold = number(from: current["price_geram18"])
+            ?? number(from: current["price_geram18k"])
+            ?? number(from: current["price_gold_18k"])
+        var quotes: [MarketAsset: Double] = [:]
+        if let dollar { quotes[.dollar] = normalizeRial(dollar) }
+        if let gold { quotes[.gold] = normalizeRial(gold) }
+        return quotes
     }
 
-    private static func numberForInstrument(in value: Any, keys: [String]) -> Double? {
-        if let dictionary = value as? [String: Any] {
-            for key in keys {
-                guard let instrument = dictionary[key] else { continue }
-                if let price = number(from: instrument) { return price }
-                if let nested = instrument as? [String: Any] {
-                    for valueKey in ["value", "price", "last", "close"] {
-                        if let price = number(from: nested[valueKey]) { return price }
-                    }
-                }
-            }
-            for child in dictionary.values {
-                if let price = numberForInstrument(in: child, keys: keys) { return price }
-            }
-        } else if let array = value as? [Any] {
-            for child in array {
-                if let price = numberForInstrument(in: child, keys: keys) { return price }
-            }
+    private static func parseFirstPrice(from data: Data) throws -> Double {
+        let json = try JSONSerialization.jsonObject(with: data)
+        guard let value = firstNumber(in: json) else { throw URLError(.cannotParseResponse) }
+        return value
+    }
+
+    private static func firstNumber(in value: Any) -> Double? {
+        if let number = number(from: value) { return number }
+        if let array = value as? [Any] {
+            return array.lazy.compactMap { firstNumber(in: $0) }.first
+        }
+        guard let dictionary = value as? [String: Any] else { return nil }
+        for key in ["data", "p", "price", "value"] {
+            if let item = dictionary[key], let number = firstNumber(in: item) { return number }
         }
         return nil
     }
@@ -703,23 +713,16 @@ private enum OanorClient {
         return Double(englishDigits)
     }
 
-    private static func rialToToman(_ value: Double) -> Double { value / 10 }
+    private static func normalizeRial(_ value: Double) -> Double {
+        value > 200_000 ? value / 10 : value
+    }
 }
 
 private enum MarketDataError: LocalizedError {
-    case missingAPIKey
-    case invalidAPIKey
-    case rateLimited
     case unavailable
 
     var errorDescription: String? {
         switch self {
-        case .missingAPIKey:
-            "کلید OanorAPIKey وارد نشده است."
-        case .invalidAPIKey:
-            "کلید Oanor معتبر نیست یا دسترسی رایگان آن فعال نشده است."
-        case .rateLimited:
-            "سقف درخواست‌های منبع قیمت پر شده است؛ چند دقیقه بعد دوباره تلاش کنید."
         case .unavailable:
             "منبع قیمت موقتاً در دسترس نیست."
         }

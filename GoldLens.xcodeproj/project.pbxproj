@@ -391,7 +391,6 @@
 				INFOPLIST_FILE = GoldLens/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = GoldLens;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
-				INFOPLIST_KEY_OanorAPIKey = "";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -428,7 +427,6 @@
 				INFOPLIST_FILE = GoldLens/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = GoldLens;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
-				INFOPLIST_KEY_OanorAPIKey = "";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

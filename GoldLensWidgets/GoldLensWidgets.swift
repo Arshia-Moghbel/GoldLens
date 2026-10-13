@@ -1,88 +1,140 @@
-//
-//  GoldLensWidgets.swift
-//  GoldLensWidgets
-//
-//  Created by Arshia Moghbel on 7/14/26.
-//
-
-import WidgetKit
+import AppIntents
+import Foundation
 import SwiftUI
+import WidgetKit
 
 struct Provider: AppIntentTimelineProvider {
-    func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date(), configuration: ConfigurationAppIntent())
-    }
+    func placeholder(in context: Context) -> SimpleEntry { .placeholder }
 
     func snapshot(for configuration: ConfigurationAppIntent, in context: Context) async -> SimpleEntry {
-        SimpleEntry(date: Date(), configuration: configuration)
+        await makeEntry(configuration: configuration)
     }
-    
+
     func timeline(for configuration: ConfigurationAppIntent, in context: Context) async -> Timeline<SimpleEntry> {
-        var entries: [SimpleEntry] = []
-
-        // Generate a timeline consisting of five entries an hour apart, starting from the current date.
-        let currentDate = Date()
-        for hourOffset in 0 ..< 5 {
-            let entryDate = Calendar.current.date(byAdding: .hour, value: hourOffset, to: currentDate)!
-            let entry = SimpleEntry(date: entryDate, configuration: configuration)
-            entries.append(entry)
-        }
-
-        return Timeline(entries: entries, policy: .atEnd)
+        let entry = await makeEntry(configuration: configuration)
+        let refresh = Calendar.current.date(byAdding: .minute, value: 15, to: .now) ?? .now.addingTimeInterval(900)
+        return Timeline(entries: [entry], policy: .after(refresh))
     }
 
-//    func relevances() async -> WidgetRelevances<ConfigurationAppIntent> {
-//        // Generate a list containing the contexts this widget is relevant in.
-//    }
+    private func makeEntry(configuration: ConfigurationAppIntent) async -> SimpleEntry {
+        SimpleEntry(date: .now, configuration: configuration, quotes: await WidgetMarketClient.fetchQuotes())
+    }
 }
 
 struct SimpleEntry: TimelineEntry {
     let date: Date
     let configuration: ConfigurationAppIntent
+    let quotes: [WidgetQuote]
+
+    static let placeholder = SimpleEntry(
+        date: .now,
+        configuration: ConfigurationAppIntent(),
+        quotes: [
+            WidgetQuote(title: "طلای ۱۸ عیار", icon: "circle.hexagongrid.fill", value: "در حال دریافت"),
+            WidgetQuote(title: "دلار آزاد", icon: "dollarsign.circle.fill", value: "در حال دریافت")
+        ]
+    )
 }
 
-struct GoldLensWidgetsEntryView : View {
-    var entry: Provider.Entry
+struct GoldLensWidgetsEntryView: View {
+    let entry: Provider.Entry
 
     var body: some View {
-        VStack {
-            Text("Time:")
-            Text(entry.date, style: .time)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label("GoldLens", systemImage: "chart.line.uptrend.xyaxis")
+                    .font(.headline)
+                Spacer()
+                Text(entry.date, style: .time)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
 
-            Text("Favorite Emoji:")
-            Text(entry.configuration.favoriteEmoji)
+            if entry.quotes.isEmpty {
+                ContentUnavailableView("نرخ در دسترس نیست", systemImage: "wifi.exclamationmark")
+                    .font(.caption)
+            } else {
+                ForEach(entry.quotes) { quote in
+                    HStack(spacing: 8) {
+                        Image(systemName: quote.icon)
+                            .foregroundStyle(quote.icon == "circle.hexagongrid.fill" ? .orange : .blue)
+                        Text(quote.title).font(.caption)
+                        Spacer(minLength: 4)
+                        Text(quote.value)
+                            .font(.caption.weight(.semibold).monospacedDigit())
+                            .lineLimit(1)
+                    }
+                }
+            }
         }
+        .containerBackground(.fill.tertiary, for: .widget)
+        .widgetURL(URL(string: "goldlens://market"))
     }
 }
 
 struct GoldLensWidgets: Widget {
-    let kind: String = "GoldLensWidgets"
+    let kind = "GoldLensWidgets"
 
     var body: some WidgetConfiguration {
         AppIntentConfiguration(kind: kind, intent: ConfigurationAppIntent.self, provider: Provider()) { entry in
             GoldLensWidgetsEntryView(entry: entry)
-                .containerBackground(.fill.tertiary, for: .widget)
+        }
+        .configurationDisplayName("نبض بازار")
+        .description("آخرین نرخ طلای ۱۸ عیار و دلار آزاد")
+        .supportedFamilies([.systemSmall, .systemMedium])
+    }
+}
+
+struct WidgetQuote: Identifiable {
+    let title: String
+    let icon: String
+    let value: String
+    var id: String { title }
+}
+
+enum WidgetMarketClient {
+    static func fetchQuotes() async -> [WidgetQuote] {
+        guard let url = URL(string: "https://call.tgju.org/ajax.json") else { return [] }
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 12
+        request.setValue("GoldLens/1.0", forHTTPHeaderField: "User-Agent")
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let response = response as? HTTPURLResponse, 200..<300 ~= response.statusCode,
+                  let root = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { return [] }
+            let current = root["current"] as? [String: Any] ?? root
+            let gold = price(from: current["price_geram18"])
+                ?? price(from: current["price_geram18k"])
+                ?? price(from: current["price_gold_18k"])
+            let dollar = price(from: current["price_dollar_rl"])
+
+            return [
+                gold.map { WidgetQuote(title: "طلای ۱۸ عیار", icon: "circle.hexagongrid.fill", value: toman($0)) },
+                dollar.map { WidgetQuote(title: "دلار آزاد", icon: "dollarsign.circle.fill", value: toman($0)) }
+            ].compactMap { $0 }
+        } catch {
+            return []
         }
     }
-}
 
-extension ConfigurationAppIntent {
-    fileprivate static var smiley: ConfigurationAppIntent {
-        let intent = ConfigurationAppIntent()
-        intent.favoriteEmoji = "😀"
-        return intent
+    private static func price(from input: Any?) -> Double? {
+        if let number = input as? NSNumber { return number.doubleValue / 10 }
+        guard let string = input as? String else { return nil }
+        let latin = string
+            .replacingOccurrences(of: "٬", with: "")
+            .replacingOccurrences(of: ",", with: "")
+            .replacingOccurrences(of: "٫", with: ".")
+            .applyingTransform(.toLatin, reverse: false) ?? string
+        guard let value = Double(latin) else { return nil }
+        return value / 10
     }
-    
-    fileprivate static var starEyes: ConfigurationAppIntent {
-        let intent = ConfigurationAppIntent()
-        intent.favoriteEmoji = "🤩"
-        return intent
-    }
-}
 
-#Preview(as: .systemSmall) {
-    GoldLensWidgets()
-} timeline: {
-    SimpleEntry(date: .now, configuration: .smiley)
-    SimpleEntry(date: .now, configuration: .starEyes)
+    private static func toman(_ value: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.locale = Locale(identifier: "fa_IR")
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 0
+        return (formatter.string(from: value as NSNumber) ?? "—") + " تومان"
+    }
 }

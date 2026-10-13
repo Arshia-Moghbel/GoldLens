@@ -12,7 +12,6 @@ import SwiftUI
 struct GoldLensWidgetsBundle: WidgetBundle {
     var body: some Widget {
         GoldLensWidgets()
-        GoldLensWidgetsControl()
         GoldLensWidgetsLiveActivity()
     }
 }

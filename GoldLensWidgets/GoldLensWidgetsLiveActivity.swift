@@ -21,7 +21,7 @@ struct GoldLensWidgetsLiveActivity: Widget {
                     .foregroundStyle(.orange)
                     .font(.title2)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("GoldLens • (context.attributes.assetName)")
+                    Text("GoldLens • \(context.attributes.assetName)")
                         .font(.caption.weight(.semibold))
                     Text(context.state.price + " تومان")
                         .font(.headline.monospacedDigit())
@@ -47,7 +47,7 @@ struct GoldLensWidgetsLiveActivity: Widget {
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     HStack {
-                        Text("طلای ۱۸ عیار")
+                        Text(context.attributes.assetName)
                         Spacer()
                         Text(context.state.price + " تومان")
                             .font(.headline.monospacedDigit())
