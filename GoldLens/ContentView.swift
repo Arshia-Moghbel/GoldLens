@@ -5,46 +5,63 @@ import Foundation
 import SwiftUI
 import UIKit
 import UserNotifications
+import WidgetKit
 
 struct ContentView: View {
     @AppStorage("notificationsEnabled") private var notificationsEnabled = false
     @AppStorage("alertThreshold") private var alertThreshold = 1.5
     @AppStorage("appLanguage") private var appLanguage = AppLanguage.persian.rawValue
     @StateObject private var marketStore = MarketStore()
+    @State private var selectedTab = AppTab.market
+    @State private var selectedAsset = MarketAsset.gold
     private let isRunningInPreview = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
 
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             MarketDashboardView(
                 notificationsEnabled: $notificationsEnabled,
                 alertThreshold: $alertThreshold,
                 isRunningInPreview: isRunningInPreview,
+                selectedAsset: $selectedAsset,
                 marketStore: marketStore
             )
             .tabItem { Label(appText("بازار", "Market"), systemImage: "chart.xyaxis.line") }
+            .tag(AppTab.market)
 
             PortfolioView(marketStore: marketStore)
                 .tabItem { Label(appText("دارایی من", "Portfolio"), systemImage: "wallet.pass.fill") }
+                .tag(AppTab.portfolio)
 
             SettingsView(
                 notificationsEnabled: $notificationsEnabled,
                 alertThreshold: $alertThreshold
             )
                 .tabItem { Label(appText("تنظیمات", "Settings"), systemImage: "gearshape.fill") }
+                .tag(AppTab.settings)
         }
         .tint(.indigo)
         .environment(\.layoutDirection, language.layoutDirection)
         .environment(\.locale, language.locale)
+        .onOpenURL(perform: openDeepLink)
     }
 
     private var language: AppLanguage { AppLanguage(rawValue: appLanguage) ?? .persian }
+
+    private func openDeepLink(_ url: URL) {
+        guard url.scheme == "goldlens" else { return }
+        selectedTab = .market
+        if url.path.lowercased().contains("dollar") { selectedAsset = .dollar }
+        if url.path.lowercased().contains("gold") { selectedAsset = .gold }
+    }
 }
+
+private enum AppTab: Hashable { case market, portfolio, settings }
 
 private struct MarketDashboardView: View {
     @Binding var notificationsEnabled: Bool
     @Binding var alertThreshold: Double
     let isRunningInPreview: Bool
-    @State private var selectedAsset: MarketAsset = .gold
+    @Binding var selectedAsset: MarketAsset
     @State private var selectedRange: ChartRange = .week
     @State private var showAlertSheet = false
     @ObservedObject var marketStore: MarketStore
@@ -212,7 +229,7 @@ private struct MarketDashboardView: View {
     private var analysisCard: some View {
         VStack(alignment: .leading, spacing: 15) {
             HStack {
-                Label("تحلیل هوشمند", systemImage: "sparkles").font(.headline)
+                Label("تحلیل داده‌محور", systemImage: "sparkles").font(.headline)
                 Spacer()
                 Text(asset.outlook)
                     .font(.caption.bold())
@@ -222,7 +239,7 @@ private struct MarketDashboardView: View {
             }
             HStack(spacing: 16) {
                 ConfidenceRing(value: asset.confidence, tint: asset.outlookColor)
-                Text(asset.analysis)
+                Text(asset.dataDrivenAnalysis)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -523,6 +540,12 @@ private struct MarketSnapshot {
     let analysis: String
     let series: [Int]
 
+    /// A transparent, on-device signal based on the visible price history.
+    /// It deliberately does not claim to predict the market or require a remote AI service.
+    var dataDrivenAnalysis: String {
+        MarketInsight.summary(for: series, priceDivisor: chartDivisor)
+    }
+
     func updated(price: Double) -> MarketSnapshot {
         let chartPrice = Int((price / chartDivisor).rounded())
         let priceChange = ((price - numericPrice) / numericPrice) * 100
@@ -558,6 +581,23 @@ private struct MarketSnapshot {
     )
 }
 
+private enum MarketInsight {
+    static func summary(for series: [Int], priceDivisor _: Double) -> String {
+        guard let first = series.suffix(7).first, let last = series.last, first != 0 else {
+            return "دادهٔ کافی برای تحلیل روند هنوز در دسترس نیست."
+        }
+        let window = Array(series.suffix(7))
+        let momentum = (Double(last - first) / Double(first)) * 100
+        let mean = window.map(Double.init).reduce(0, +) / Double(window.count)
+        let variance = window.map { pow(Double($0) - mean, 2) }.reduce(0, +) / Double(window.count)
+        let volatility = sqrt(variance) / max(mean, 1) * 100
+        let direction = momentum >= 0 ? "صعودی" : "نزولی"
+        let risk = volatility > 1.2 ? "نوسان بالا" : "نوسان کنترل‌شده"
+        let roundedMomentum = abs(momentum).formatted(.number.precision(.fractionLength(1)))
+        return "روند هفت دادهٔ اخیر \\(direction) است (\\(roundedMomentum)٪). \\(risk)؛ این نتیجه از تغییرات قیمت محاسبه می‌شود و توصیهٔ سرمایه‌گذاری نیست."
+    }
+}
+
 private struct PricePoint: Identifiable { let label: String; let value: Int; var id: String { label } }
 
 @MainActor
@@ -573,6 +613,15 @@ private final class MarketStore: ObservableObject {
         .dollar: .dollar
     ]
     private var lastAlertDate: [MarketAsset: Date] = [:]
+
+    init() {
+        guard let cache = OfflineMarketCache.load() else { return }
+        snapshots[.gold] = snapshots[.gold]?.updated(price: cache.goldPrice) ?? .gold
+        snapshots[.dollar] = snapshots[.dollar]?.updated(price: cache.dollarPrice) ?? .dollar
+        lastUpdated = cache.updatedAt
+        sourceTitle = "آخرین دادهٔ ذخیره‌شده"
+        connectionMessage = "حالت آفلاین: آخرین نرخ ذخیره‌شده نمایش داده می‌شود."
+    }
 
     func snapshot(for asset: MarketAsset) -> MarketSnapshot {
         snapshots[asset] ?? asset.snapshot
@@ -628,11 +677,35 @@ private final class MarketStore: ObservableObject {
 
         events = Array(events.prefix(8))
         lastUpdated = Date()
+        OfflineMarketCache.save(
+            goldPrice: snapshot(for: .gold).numericPrice,
+            dollarPrice: snapshot(for: .dollar).numericPrice,
+            updatedAt: lastUpdated
+        )
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     private func canSendAlert(for asset: MarketAsset) -> Bool {
         guard let date = lastAlertDate[asset] else { return true }
         return Date().timeIntervalSince(date) >= 20 * 60
+    }
+}
+
+private struct OfflineMarketCache: Codable {
+    let goldPrice: Double
+    let dollarPrice: Double
+    let updatedAt: Date
+    private static let key = "offlineMarketCache.v1"
+
+    static func load() -> OfflineMarketCache? {
+        guard let data = UserDefaults.standard.data(forKey: key) else { return nil }
+        return try? JSONDecoder().decode(OfflineMarketCache.self, from: data)
+    }
+
+    static func save(goldPrice: Double, dollarPrice: Double, updatedAt: Date) {
+        let cache = OfflineMarketCache(goldPrice: goldPrice, dollarPrice: dollarPrice, updatedAt: updatedAt)
+        guard let data = try? JSONEncoder().encode(cache) else { return }
+        UserDefaults.standard.set(data, forKey: key)
     }
 }
 
@@ -756,7 +829,7 @@ private final class NotificationManager {
 }
 
 @available(iOS 16.1, *)
-struct MarketLiveActivityAttributes: ActivityAttributes {
+nonisolated struct MarketLiveActivityAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
         var price: String
         var change: String
