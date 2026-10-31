@@ -30,19 +30,23 @@ struct SimpleEntry: TimelineEntry {
         date: .now,
         configuration: ConfigurationAppIntent(),
         quotes: [
-            WidgetQuote(title: "طلای ۱۸ عیار", icon: "circle.hexagongrid.fill", value: "در حال دریافت"),
-            WidgetQuote(title: "دلار آزاد", icon: "dollarsign.circle.fill", value: "در حال دریافت")
+            WidgetQuote(title: "Gold", icon: "circle.hexagongrid.fill", value: "—"),
+            WidgetQuote(title: "USD", icon: "dollarsign.circle.fill", value: "—")
         ]
     )
 }
 
 struct GoldLensWidgetsEntryView: View {
     let entry: Provider.Entry
+    @Environment(\.widgetFamily) private var family
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Label("GoldLens", systemImage: "chart.line.uptrend.xyaxis")
+                HStack(spacing: 4) {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                    Text("GoldLens").lineLimit(1).minimumScaleFactor(0.65)
+                }
                     .font(.headline)
                 Spacer()
                 Text(entry.date, style: .time)
@@ -58,11 +62,16 @@ struct GoldLensWidgetsEntryView: View {
                     HStack(spacing: 8) {
                         Image(systemName: quote.icon)
                             .foregroundStyle(quote.icon == "circle.hexagongrid.fill" ? .orange : .blue)
-                        Text(quote.title).font(.caption)
+                        Text(quote.shortTitle)
+                            .font(.caption)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
                         Spacer(minLength: 4)
                         Text(quote.value)
                             .font(.caption.weight(.semibold).monospacedDigit())
                             .lineLimit(1)
+                            .minimumScaleFactor(0.65)
+                            .layoutPriority(1)
                     }
                 }
             }
@@ -90,6 +99,7 @@ struct WidgetQuote: Identifiable {
     let icon: String
     let value: String
     var id: String { title }
+    var shortTitle: String { icon == "circle.hexagongrid.fill" ? "Gold" : "USD" }
 }
 
 enum WidgetMarketClient {
@@ -104,14 +114,14 @@ enum WidgetMarketClient {
             guard let response = response as? HTTPURLResponse, 200..<300 ~= response.statusCode,
                   let root = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { return [] }
             let current = root["current"] as? [String: Any] ?? root
-            let gold = price(from: current["price_geram18"])
-                ?? price(from: current["price_geram18k"])
-                ?? price(from: current["price_gold_18k"])
+            // TGJU returns each quote as an object (for example, geram18.p),
+            // not a raw number. Reading p prevents an empty widget timeline.
+            let gold = price(from: current["geram18"])
             let dollar = price(from: current["price_dollar_rl"])
 
             return [
-                gold.map { WidgetQuote(title: "طلای ۱۸ عیار", icon: "circle.hexagongrid.fill", value: toman($0)) },
-                dollar.map { WidgetQuote(title: "دلار آزاد", icon: "dollarsign.circle.fill", value: toman($0)) }
+                gold.map { WidgetQuote(title: "Gold", icon: "circle.hexagongrid.fill", value: compact($0)) },
+                dollar.map { WidgetQuote(title: "USD", icon: "dollarsign.circle.fill", value: compact($0)) }
             ].compactMap { $0 }
         } catch {
             return []
@@ -119,6 +129,9 @@ enum WidgetMarketClient {
     }
 
     private static func price(from input: Any?) -> Double? {
+        if let quote = input as? [String: Any] {
+            return price(from: quote["p"])
+        }
         if let number = input as? NSNumber { return number.doubleValue / 10 }
         guard let string = input as? String else { return nil }
         let latin = string
@@ -130,11 +143,13 @@ enum WidgetMarketClient {
         return value / 10
     }
 
-    private static func toman(_ value: Double) -> String {
+    private static func compact(_ value: Double) -> String {
         let formatter = NumberFormatter()
-        formatter.locale = Locale(identifier: "fa_IR")
+        formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.numberStyle = .decimal
-        formatter.maximumFractionDigits = 0
-        return (formatter.string(from: value as NSNumber) ?? "—") + " تومان"
+        formatter.maximumFractionDigits = 2
+        if value >= 1_000_000 { return "\(formatter.string(from: (value / 1_000_000) as NSNumber) ?? "—")M" }
+        if value >= 1_000 { return "\(formatter.string(from: (value / 1_000) as NSNumber) ?? "—")K" }
+        return formatter.string(from: value as NSNumber) ?? "—"
     }
 }

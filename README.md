@@ -157,14 +157,14 @@ Run the application.
 
 * ✅ Live Gold Prices
 * ✅ Live Currency Prices
-* 🔄 AI Analysis
-* 🔄 Notifications
-* 🔄 Portfolio
-* 🔄 Apple Watch
-* 🔄 Widgets
-* 🔄 iPad Support
-* 🔄 Multi Language
-* 🔄 Offline Mode
+* ✅ Data-driven market analysis
+* ✅ Price notifications
+* ✅ Portfolio tracking
+* ⏳ Apple Watch companion — requires a paired Apple Watch for on-device delivery and validation
+* ✅ Home Screen widgets and Live Activities
+* ✅ iPad support
+* ✅ Persian and English interface
+* ✅ Offline last-known-price mode
 
 ⸻
 
