@@ -18,6 +18,8 @@ Gold Investing is a modern native iOS application designed to help users monitor
 
 The goal is to provide fast, reliable, and user-friendly financial information while keeping the interface clean and beautiful.
 
+> **Status:** 🚧 In Active Development
+
 ⸻
 
 📱 Screenshots
